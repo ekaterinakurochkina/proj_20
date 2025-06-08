@@ -8,7 +8,6 @@ from materials.models import Course, Lesson, Subscription
 from materials.validators import VideoUrlValidator
 from users.serializer import PaymentsSerializer, UserSerializer
 
-
 class LessonSerializer(serializers.ModelSerializer):
     course = serializers.StringRelatedField(read_only=True)
     # course = CourseSerializer(read_only=True)

@@ -9,6 +9,7 @@ class Course(models.Model):
                                    help_text="Введите описание курса")
     owner = models.ForeignKey("users.User", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Владелец",
                               help_text="Укажите владельца урока")
+    subscribers = models.ManyToManyField("users.User", null=True, blank=True, verbose_name="Подписчики", help_text="Укажите подписчиков", related_name="subscribers")
 
     class Meta:
         verbose_name = "Курс"

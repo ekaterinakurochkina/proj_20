@@ -1,3 +1,4 @@
+from django.core.serializers import serialize
 from rest_framework import status
 from rest_framework.generics import CreateAPIView, ListAPIView, UpdateAPIView, DestroyAPIView, RetrieveAPIView, \
     get_object_or_404
@@ -6,11 +7,13 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 
-from materials.models import Course, Lesson, Subscription
-from materials.serializers import CourseSerializer, LessonSerializer
+from .models import Course, Lesson, Subscription
+from .serializers import CourseSerializer, LessonSerializer
 from users.permissions import IsModer, IsOwner
 from .paginators import MaterialsPaginator
-
+from .tasks import send_course_update_email
+from rest_framework.response import Response
+from rest_framework.decorators import action
 
 class CourseViewSet(ModelViewSet):
     queryset = Course.objects.all()
@@ -21,6 +24,23 @@ class CourseViewSet(ModelViewSet):
         course = serializer.save()
         course.owner = self.request.user
         course.save()
+
+    def update(self, request, *args, **kwargs):
+        course = self.get_object()
+
+        # Получаем список подписчиков курса
+        mail_list = list(course.subscribers.values_list('email', flat=True))
+
+        # Обновляем курс
+        serializer = self.get_serializer(course, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        # Если обновление прошло успешно, отправляем уведомления подписчикам
+        if mail_list:
+            send_course_update_email.delay(mail_list)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class LessonCreateApiView(CreateAPIView):
@@ -58,7 +78,6 @@ class LessonUpdateApiView(UpdateAPIView):
     # permission_classes = (IsAuthenticated, IsModer | IsOwner)
 
 
-
 class LessonDestroyApiView(DestroyAPIView):
     queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
@@ -72,31 +91,6 @@ from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from .models import Subscription, Course
 from .serializers import SubscriptionSerializer
-
-
-class SubscriptionApiView(APIView):
-    # permission_classes = [IsAuthenticated]
-
-    def post(self, request, *args, **kwargs):
-        user = self.request.user
-        course_id = self.request.data.get("id")
-        course_item = get_object_or_404(Course, id=course_id)
-
-        subs_item = Subscription.objects.filter(user=user, course=course_item)
-
-        # Если подписка у пользователя на этот курс есть - удаляем ее
-        if subs_item.exists():
-            subs_item.delete()
-            message = "подписка удалена"
-            status_code = status.HTTP_200_OK
-        # Если подписки у пользователя на этот курс нет - создаем ее
-        else:
-            subs_item.create()
-            message = "подписка добавлена"
-            status_code = status.HTTP_201_CREATED
-
-        # Возвращаем ответ в API
-        return Response({"message": message}, status=status_code)
 
 
 class SubscriptionApiView(APIView):
