@@ -1,19 +1,17 @@
 from django.core.serializers import serialize
-from rest_framework import status
 from rest_framework.generics import CreateAPIView, ListAPIView, UpdateAPIView, DestroyAPIView, RetrieveAPIView, \
     get_object_or_404
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 
-from .models import Course, Lesson, Subscription
+from .models import Course, Lesson
 from .serializers import CourseSerializer, LessonSerializer
-from users.permissions import IsModer, IsOwner
 from .paginators import MaterialsPaginator
 from .tasks import send_course_update_email
 from rest_framework.response import Response
 from rest_framework.decorators import action
+
 
 class CourseViewSet(ModelViewSet):
     queryset = Course.objects.all()
@@ -90,7 +88,6 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from .models import Subscription, Course
-from .serializers import SubscriptionSerializer
 
 
 class SubscriptionApiView(APIView):
