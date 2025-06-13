@@ -20,9 +20,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Определяем переменные окружения
-# ENV SECRET_KEY=""
-# ENV CELERY_BROKER_URL=""
-# ENV CELERY_RESULT_BACKEND=""
+ENV SECRET_KEY=""
+ENV CELERY_BROKER_URL=""
+ENV CELERY_RESULT_BACKEND=""
 
 # Создаем директорию для медиафайлов
 RUN mkdir -p /app/media
