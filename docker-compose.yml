@@ -1,12 +1,11 @@
-version: '3.9'
-
 services:
   web:
     build: .
-    command: python manage.py runserver 0.0.0.0:8000
+    command: >
+      bash -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
     volumes:
       - .:/code
-      - static_volume:/code/static
+
     ports:
       - "8000:8000"
     depends_on:
@@ -20,16 +19,12 @@ services:
       - postgres_data:/var/lib/postgresql/data
     env_file:
       - ./.env
-
-  celery:
-    build: .
-    command: celery -A config.celery worker --beat --loglevel=info
-    volumes:
-      - .:/code
-    depends_on:
-      - db
-    env_file:
-      - ./.env
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U myuser"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    command: celery -A config worker --beat --loglevel=info
 
 volumes:
   postgres_data:
